@@ -1,4 +1,4 @@
-import express, {json} from 'express'
+import express, { json } from 'express'
 import cors from 'cors'
 import routes from './routes/index.js'
 
