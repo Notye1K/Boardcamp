@@ -7,6 +7,6 @@ import checkName from "../middlewares/checkName.js"
 const categoriesRouter = Router()
 
 categoriesRouter.get('/categories', getCategories)
-categoriesRouter.post('/categories', validateSchema(schema), checkName('categories'), postCategories)
+categoriesRouter.post('/categories', validateSchema(schema), checkName('categories', 'name'), postCategories)
 
 export default categoriesRouter
