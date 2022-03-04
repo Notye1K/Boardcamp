@@ -1,8 +1,15 @@
 import connection from '../db.js'
+import limitOffset from '../services/limitOffset.js'
 import printError from '../services/printError.js'
 
 export async function getCategories(req, res) {
     try {
+
+        const result = await limitOffset('SELECT * FROM categories', req)
+        if (result) {
+            return res.send(result)
+        }
+
         const categories = await connection.query('SELECT * FROM categories')
 
         res.send(categories.rows)

@@ -12,6 +12,24 @@ export async function getRentals(req, res) {
                 JOIN games ON games.id="gameId"
                 JOIN categories ON games."categoryId"=categories.id`
 
+        if (req.query.offset && req.query.limit) {
+            const rentals = await connection.query(`${query}
+                LIMIT $1 OFFSET $2`, [req.query.limit, req.query.offset])
+            const result = rentals.rows.map(rentalsFormat)
+
+            return res.send(result)
+        }
+
+        if (req.query.offset || req.query.limit) {
+            const { limit, offset } = req.query
+            const queryString = offset ? offset : limit
+            const rentals = await connection.query(`${query}
+                ${offset ? 'OFFSET' : 'LIMIT'} $1`, [queryString])
+            const result = rentals.rows.map(rentalsFormat)
+
+            return res.send(result)
+        }
+
         if (req.query.customerId && !isNaN(req.query.customerId)) {
             const rentals = await connection.query(`${query} WHERE "customerId"=$1`, [parseInt(req.query.customerId)])
 

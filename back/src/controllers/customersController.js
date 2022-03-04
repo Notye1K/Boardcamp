@@ -1,14 +1,22 @@
 import connection from '../db.js'
+import limitOffset from '../services/limitOffset.js'
 import printError from '../services/printError.js'
 
 export async function getCustomers(req, res) {
     try {
+        const query = "SELECT *, to_char(birthday, 'YYYY-mm-dd') AS birthday FROM customers"
         if (req.query.cpf) {
-            const customers = await connection.query(`SELECT *, to_char(birthday, 'YYYY-mm-dd') AS birthday FROM customers
+            const customers = await connection.query(`${query}
                 WHERE cpf LIKE $1 || '%'`, [req.query.cpf])
             res.send(customers.rows)
         } else {
-            const customers = await connection.query(`SELECT *, to_char(birthday, 'YYYY-mm-dd') AS birthday FROM customers`)
+
+            const result = await limitOffset(query, req)
+            if (result) {
+                return res.send(result)
+            }
+
+            const customers = await connection.query(query)
             res.send(customers.rows)
         }
     } catch (error) {
