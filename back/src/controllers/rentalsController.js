@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 
 export async function getRentals(req, res) {
     try {
-        const query = `SELECT rentals.*, to_char("rentDate", 'YYYY-mm-dd') AS "rentDate",
+        const query = `SELECT rentals.*, to_char("rentDate", 'YYYY-mm-dd') AS "rentDate", to_char("returnDate", 'YYYY-mm-dd') AS "returnDate",
             customers.id AS id_c, customers.name AS name_c,
             games.id AS id_g, games.name AS name_g, games."categoryId", categories.name AS name_cate
             FROM rentals
@@ -81,6 +81,52 @@ export async function postRentals(req, res) {
             VALUES ($1, $2, $4, $3, null, ${originalPrice}, null)`, [customerId, gameId, daysRented, rentDate])
 
         res.sendStatus(201)
+    } catch (error) {
+        printError(res, error)
+    }
+}
+
+export async function leaseCompletion(req, res) {
+    try {
+        const id = req.params.id
+
+        const { rows: [rental] } = await connection.query(`SELECT "gameId", "rentDate", "daysRented", "returnDate" FROM rentals
+            WHERE id=$1`, [id])
+
+        if (rental.returnDate !== null) {
+            return res.status(400).send('rent already finished')
+        }
+
+        const { rows: [{ pricePerDay }] } = await connection.query(`SELECT "pricePerDay" FROM games
+            WHERE id=${rental.gameId}`)
+
+        const returnDate = dayjs().format("YYYY-MM-DD")
+        const delayDays = dayjs(returnDate).diff(dayjs(rental.rentDate), 'day') - rental.daysRented
+        const delayFee = delayDays > 0 ? pricePerDay * delayDays : null
+        await connection.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=${delayFee}
+            WHERE id=${id}`, [returnDate])
+
+        res.sendStatus(200)
+    } catch (error) {
+        printError(res, error)
+    }
+}
+
+export async function deleteRental(req, res) {
+    try {
+        const id = req.params.id
+
+        const { rows: [{ returnDate }] } = await connection.query(`SELECT "returnDate" FROM rentals
+            WHERE id=$1`, [id])
+
+        if (returnDate !== null) {
+            return res.status(400).send('rent already finished')
+        }
+
+        await connection.query(`DELETE FROM rentals
+            WHERE id=$1`, [id])
+
+        res.sendStatus(200)
     } catch (error) {
         printError(res, error)
     }
