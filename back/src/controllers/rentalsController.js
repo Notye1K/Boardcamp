@@ -3,6 +3,7 @@ import printError from '../utils/printError.js'
 import dayjs from 'dayjs'
 import limitOffset from "../utils/limitOffset.js"
 import order from "../utils/order.js"
+import Joi from "joi"
 
 export async function getRentals(req, res) {
     try {
@@ -23,6 +24,16 @@ export async function getRentals(req, res) {
         const orderBy = await order(query, req)
         if(orderBy){
             const result = orderBy.map(rentalsFormat)
+            return res.send(result)
+        }
+
+        const schema = Joi.date().iso().required()
+        if (req.query.startDate && schema.validate(req.query.startDate).error){
+            return res.status(400).send('startDate ivalid')
+        }
+        const statusResult = await status(query, req)
+        if(statusResult){
+            const result = statusResult.map(rentalsFormat)
             return res.send(result)
         }
 
@@ -56,6 +67,29 @@ function rentalsFormat(rentals) {
     const { id_c, name_c, id_g, name_g, categoryId, name_cate, ...rest } = rentals
     const obj = { ...rest, customer, game }
     return obj
+}
+
+async function status(query, req){
+    const { status, startDate} = req.query
+    if (status){
+        if (status === 'open') {
+            const result = await connection.query(`${query}
+                WHERE "returnDate" IS NULL`)
+            return result.rows
+        }
+        if (status === 'closed') {
+            const result = await connection.query(`${query}
+                WHERE "returnDate" IS NOT NULL`)
+            return result.rows
+        }
+        return false
+    }
+    if(startDate){
+        const result = await connection.query(`${query}
+                WHERE "rentDate" > $1`, [startDate])
+        return result.rows
+    }
+    return false
 }
 
 export async function postRentals(req, res) {
