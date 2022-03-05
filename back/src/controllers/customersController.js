@@ -1,6 +1,7 @@
 import connection from '../db.js'
-import limitOffset from '../services/limitOffset.js'
-import printError from '../services/printError.js'
+import limitOffset from '../utils/limitOffset.js'
+import order from '../utils/order.js'
+import printError from '../utils/printError.js'
 
 export async function getCustomers(req, res) {
     try {
@@ -14,6 +15,11 @@ export async function getCustomers(req, res) {
             const result = await limitOffset(query, req)
             if (result) {
                 return res.send(result)
+            }
+
+            const orderBy = await order(query, req)
+            if (orderBy) {
+                return res.send(orderBy)
             }
 
             const customers = await connection.query(query)

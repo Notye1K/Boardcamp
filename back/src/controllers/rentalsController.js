@@ -1,6 +1,8 @@
 import connection from "../db.js"
-import printError from '../services/printError.js'
+import printError from '../utils/printError.js'
 import dayjs from 'dayjs'
+import limitOffset from "../utils/limitOffset.js"
+import order from "../utils/order.js"
 
 export async function getRentals(req, res) {
     try {
@@ -12,21 +14,15 @@ export async function getRentals(req, res) {
                 JOIN games ON games.id="gameId"
                 JOIN categories ON games."categoryId"=categories.id`
 
-        if (req.query.offset && req.query.limit) {
-            const rentals = await connection.query(`${query}
-                LIMIT $1 OFFSET $2`, [req.query.limit, req.query.offset])
-            const result = rentals.rows.map(rentalsFormat)
-
+        const limit = await limitOffset(query, req)
+        if(limit){
+            const result = limit.map(rentalsFormat)
             return res.send(result)
         }
 
-        if (req.query.offset || req.query.limit) {
-            const { limit, offset } = req.query
-            const queryString = offset ? offset : limit
-            const rentals = await connection.query(`${query}
-                ${offset ? 'OFFSET' : 'LIMIT'} $1`, [queryString])
-            const result = rentals.rows.map(rentalsFormat)
-
+        const orderBy = await order(query, req)
+        if(orderBy){
+            const result = orderBy.map(rentalsFormat)
             return res.send(result)
         }
 

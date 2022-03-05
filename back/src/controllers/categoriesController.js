@@ -1,6 +1,7 @@
 import connection from '../db.js'
-import limitOffset from '../services/limitOffset.js'
-import printError from '../services/printError.js'
+import limitOffset from '../utils/limitOffset.js'
+import order from '../utils/order.js'
+import printError from '../utils/printError.js'
 
 export async function getCategories(req, res) {
     try {
@@ -8,6 +9,11 @@ export async function getCategories(req, res) {
         const result = await limitOffset('SELECT * FROM categories', req)
         if (result) {
             return res.send(result)
+        }
+
+        const orderBy = await order('SELECT * FROM categories', req)
+        if (orderBy) {
+            return res.send(orderBy)
         }
 
         const categories = await connection.query('SELECT * FROM categories')
