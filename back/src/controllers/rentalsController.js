@@ -28,7 +28,7 @@ export async function getRentals(req, res) {
         }
 
         if (req.query.startDate && schema.validate(req.query.startDate).error) {
-            return res.status(400).send('startDate ivalid')
+            return res.status(400).send('invalid startDate')
         }
         const statusResult = await status(query, req)
         if (statusResult) {
@@ -192,10 +192,10 @@ export async function rentalMetrics(req, res) {
         let result2
         if (startDate || endDate) {
             if (startDate && schema.validate(startDate).error) {
-                return res.status(400).send('startDate ivalid')
+                return res.status(400).send('invalid startDate')
             }
             if (endDate && schema.validate(endDate).error) {
-                return res.status(400).send('endDate ivalid')
+                return res.status(400).send('invalid endDate')
             }
             if (startDate && endDate) {
                 result1 = await connection.query(`${query1}

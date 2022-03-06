@@ -5,26 +5,32 @@ import printError from '../utils/printError.js'
 
 export async function getGames(req, res) {
     try {
-        const query = `SELECT games.*, categories.name AS "categoryName" FROM games
-                JOIN categories ON games."categoryId"=categories.id`
+        function query(txt) {
+            return `SELECT games.*, categories.name AS "categoryName",
+                    COUNT (rentals."gameId") AS "rentalsCount" FROM games
+                    LEFT JOIN rentals ON games.id = "gameId"
+                    JOIN categories ON games."categoryId"=categories.id
+                    ${txt}
+                    GROUP BY games.id, categories.name`
+        }
         if (req.query.name) {
-            const games = await connection.query(`${query}
-                WHERE games.name LIKE $1 || '%'`, [req.query.name])
+            const games = await connection.query(query(`
+                WHERE games.name LIKE $1 || '%'`), [req.query.name])
             res.send(games.rows)
         }
         else {
 
-            const result = await limitOffset(query, req)
+            const result = await limitOffset(query(''), req)
             if (result) {
                 return res.send(result)
             }
 
-            const orderBy = await order(query, req)
+            const orderBy = await order(query(''), req)
             if (orderBy) {
                 return res.send(orderBy)
             }
 
-            const games = await connection.query(query)
+            const games = await connection.query(query(''))
             res.send(games.rows)
         }
     } catch (error) {

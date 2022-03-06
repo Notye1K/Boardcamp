@@ -5,24 +5,30 @@ import printError from '../utils/printError.js'
 
 export async function getCustomers(req, res) {
     try {
-        const query = "SELECT *, to_char(birthday, 'YYYY-mm-dd') AS birthday FROM customers"
+        function query(txt) {
+            return `SELECT customers.*, to_char(birthday, 'YYYY-mm-dd') AS birthday,
+                    COUNT (rentals."customerId") AS "rentalsCount"  FROM customers
+                    LEFT JOIN rentals ON customers.id = "customerId"
+                    ${txt}
+                    GROUP BY customers.id`
+        }
         if (req.query.cpf) {
-            const customers = await connection.query(`${query}
-                WHERE cpf LIKE $1 || '%'`, [req.query.cpf])
+            const customers = await connection.query(query(`
+                WHERE cpf LIKE $1 || '%'`), [req.query.cpf])
             res.send(customers.rows)
         } else {
 
-            const result = await limitOffset(query, req)
+            const result = await limitOffset(query(''), req)
             if (result) {
                 return res.send(result)
             }
 
-            const orderBy = await order(query, req)
+            const orderBy = await order(query(''), req)
             if (orderBy) {
                 return res.send(orderBy)
             }
 
-            const customers = await connection.query(query)
+            const customers = await connection.query(query(''))
             res.send(customers.rows)
         }
     } catch (error) {
