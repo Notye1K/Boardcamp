@@ -102,11 +102,13 @@ export async function postRentals(req, res) {
         const game = await connection.query(`SELECT "pricePerDay", "stockTotal" FROM games
             WHERE id=$1`, [gameId])
 
-        let price
+        const rentalsCount = await connection.query(`SELECT COUNT ("gameId") FROM rentals
+            WHERE "gameId"=$1 AND "returnDate" IS NULL`, [gameId])
 
+        let price
         if (game.rows.length === 0) {
             return res.status(400).send('gamerId not found')
-        } else if (game.rows.stockTotal < 1) {
+        } else if (rentalsCount.rows.length !== 0 && game.rows[0].stockTotal <= rentalsCount.rows[0].count) {
             return res.status(400).send('missing stock')
         } else {
             price = game.rows[0].pricePerDay
